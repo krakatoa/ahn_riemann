@@ -8,8 +8,8 @@ Gem::Specification.new do |s|
   s.authors     = ["Fernando D. Alonso"]
   s.email       = ["krakatoa1987@gmail.com"]
   s.homepage    = "http://github.com/krakatoa/ahn_riemann"
-  s.summary     = %q{TODO: Write a gem summary}
-  s.description = %q{TODO: Write a gem description}
+  s.summary     = %q{Adhearsion-Riemann plugin}
+  s.description = %q{Adhearsion plugin to forward call events and exceptions to the Riemann server}
 
   s.rubyforge_project = "ahn_riemann"
 
