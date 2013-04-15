@@ -5,8 +5,9 @@ module AhnRiemann
 
     def gen_config
       self.destination_root = Adhearsion.config.platform.root
-      #template File.join(File.dirname(__FILE__), "config/templates/config/riemann.yml"), "config/riemann.yml"
-      template "config/riemann.yml, "config/riemann.yml"
+      AhnRiemann::ConfigGenerator.source_root File.join(File.dirname(File.expand_path(__FILE__)), "config/templates")
+      
+      template "config/riemann.yml"
     end
   end
 end
