@@ -43,21 +43,8 @@ module AhnRiemann
     tasks do
       namespace :riemann do
         desc "Prints the PluginTemplate information"
-        task :gen_config do
-          STDIN.flush
-
-          STDOUT.puts "Riemann server host (defaults to localhost): "
-          host = STDIN.gets.strip
-          host = host.empty? ? "localhost" : host
-
-          STDOUT.puts "Riemann server port (defaults to 5555): "
-          port = STDIN.gets.strip
-          port = port.empty? ? "5555" : port
-
+        task :info do
           # STDOUT.puts "Riemann config: #{host}, #{port}"
-
-
-          
         end
       end
     end
