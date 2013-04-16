@@ -1,3 +1,6 @@
-development:
-  host: <%= @host %>
-  port: <%= @port %>
+<% @config.each_pair do |env, c| -%>
+<%= env -%>:
+<% c.each_pair do |k, v| -%>
+  <%= k %>: <%= v %>
+<% end -%>
+<% end -%>
