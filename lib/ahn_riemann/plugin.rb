@@ -4,11 +4,12 @@ require "riemann/client"
 
 module AhnRiemann
   class Plugin < Adhearsion::Plugin
+    
     # Actions to perform when the plugin is loaded
     #
     init :ahn_riemann do
-      rc = Riemann::Client.new(:host => "10.0.0.8", :port => 5555)
-      logger.warn "Ahn-Riemann client connected"
+      rc = Riemann::Client.new(:host => Adhearsion.config.riemann.host, :port => Adhearsion.config.riemann.port)
+      logger.warn "Ahn-Riemann client connected to #{Adhearsion.config.riemann.host}:#{Adhearsion.config.riemann.port}"
 
       Adhearsion::Events.register_callback(:exception) do |e, logger|
         # logger.error "Sending message: " e.methods.sort
@@ -19,25 +20,35 @@ module AhnRiemann
         body << "Backtrace:\n#{e.backtrace.join("\n")}"
 
         msg = {
-          :service => "ivr-engine",
-          :state => "critical",
+          :service => Adhearsion.config.riemann.error_trace.service,
+          :state => Adhearsion.config.riemann.error_trace.state,
           :description => body.join("\n\n"),
-          :tags => ["call"],
+          :tags => [Adhearsion.config.riemann.error_trace.tag, Adhearsion.config.platform.environment.to_s],
           :metric => 1
         }
 
         rc << msg
       end
     end
-
+    
     # Basic configuration for the plugin
     #
     config :riemann do
-      # greeting "Hello", :desc => "What to use to greet users"
-      file_config = YAML::load_file(File.join(Adhearsion.config.platform.root, "config/riemann.yml"))[Adhearsion.config.platform.environment.to_s] rescue {}
-      
-      host file_config["host"] || "localhost"
-      port file_config["port"] || "5555"
+
+      riemann_config = YAML::load_file(File.join(Dir.getwd, "config/riemann.yml")) rescue {}
+
+      server_config = riemann_config[Adhearsion.config.platform.environment.to_s] rescue {}
+      host server_config["host"]
+      port server_config["port"]
+      origin_host server_config["origin_host"]
+
+      events_config = riemann_config["events"]
+      error_trace {
+        service events_config["error_trace"]["service"]
+        state events_config["error_trace"]["state"]
+        tag events_config["error_trace"]["tag"]
+      }
+
     end
 
     tasks do
@@ -48,7 +59,7 @@ module AhnRiemann
         end
       end
     end
-
+    
     generators :"riemann_plugin:config" => AhnRiemann::ConfigGenerator
 
   end
