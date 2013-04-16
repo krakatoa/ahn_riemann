@@ -24,7 +24,8 @@ module AhnRiemann
           :state => Adhearsion.config.riemann.error_trace.state,
           :description => body.join("\n\n"),
           :tags => [Adhearsion.config.riemann.error_trace.tag, Adhearsion.config.platform.environment.to_s],
-          :metric => 1
+          :metric => 1,
+          :host => Adhearsion.config.riemann.origin_host
         }
 
         rc << msg
