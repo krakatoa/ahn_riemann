@@ -37,18 +37,23 @@ module AhnRiemann
     config :riemann do
 
       riemann_config = YAML::load_file(File.join(Dir.getwd, "config/riemann.yml")) rescue {}
+      server_config = riemann_config[Adhearsion.config.platform.environment.to_s] rescue nil
+      
+      if not server_config
+        $stdout.puts "Ahn-Riemann config file is missing. Please create one by running 'bundle exec ahn generate riemann_plugin:config'"
+      else
+        
+        host server_config["host"]
+        port server_config["port"]
+        origin_host server_config["origin_host"]
 
-      server_config = riemann_config[Adhearsion.config.platform.environment.to_s] rescue {}
-      host server_config["host"]
-      port server_config["port"]
-      origin_host server_config["origin_host"]
-
-      events_config = riemann_config["events"]
-      error_trace {
-        service events_config["error_trace"]["service"]
-        state events_config["error_trace"]["state"]
-        tag events_config["error_trace"]["tag"]
-      }
+        events_config = riemann_config["events"]
+        error_trace {
+          service events_config["error_trace"]["service"]
+          state events_config["error_trace"]["state"]
+          tag events_config["error_trace"]["tag"]
+        }
+      end
 
     end
 
