@@ -14,7 +14,7 @@ base_server: &base_server
 events:
 <% @events_config.each_pair do |event_name, c| -%>
   <%= event_name -%>:
-  <% c.each_pair do |k, v| -%>
-  <%= k %>: <%= v %>
-  <% end -%>
+<%- c.each_pair do |k, v| -%>
+    <%= k %>: <%= v %>
 <% end -%>
+<%- end -%>

@@ -30,6 +30,21 @@ module AhnRiemann
 
         rc << msg
       end
+
+      Adhearsion::Events.register_callback(:punchblock) do |e, logger|
+        msg = {
+          :service => Adhearsion.config.riemann.punchblock_connection.service,
+          :tags => [Adhearsion.config.riemann.punchblock_connection.tag, Adhearsion.config.platform.environment.to_s],
+          :metric => 1,
+          :host => Adhearsion.config.riemann.origin_host
+        }
+        if e.is_a? Punchblock::Connection::Connected
+          msg.merge!(:state => 'connected')
+        elsif e.is_a? Punchblock::Connection::Disconnected
+          msg.merge!(:state => 'disconnected')
+        end
+        rc << msg
+      end
     end
     
     # Basic configuration for the plugin
@@ -53,6 +68,12 @@ module AhnRiemann
           state events_config["error_trace"]["state"]
           tag events_config["error_trace"]["tag"]
         }
+
+        punchblock_connection {
+          service events_config["punchblock_connection"]["service"]
+          tag events_config["punchblock_connection"]["tag"]
+        }
+
       end
 
     end
