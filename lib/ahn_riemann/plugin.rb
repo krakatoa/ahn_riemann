@@ -5,31 +5,13 @@ require "riemann/client"
 module AhnRiemann
   class Plugin < Adhearsion::Plugin
     
+    @@riemann_client = nil
+
     # Actions to perform when the plugin is loaded
     #
     init :ahn_riemann do
-      rc = Riemann::Client.new(:host => Adhearsion.config.riemann.host, :port => Adhearsion.config.riemann.port)
+      @@riemann_client = Riemann::Client.new(:host => Adhearsion.config.riemann.host, :port => Adhearsion.config.riemann.port)
       logger.warn "Ahn-Riemann client connected to #{Adhearsion.config.riemann.host}:#{Adhearsion.config.riemann.port}"
-
-      Adhearsion::Events.register_callback(:exception) do |e, logger|
-        # logger.error "Sending message: " e.methods.sort
-
-        body = []
-        body << "Exception: #{e.class}"
-        body << "Description: #{e.message}"
-        body << "Backtrace:\n#{e.backtrace.join("\n")}"
-
-        msg = {
-          :service => Adhearsion.config.riemann.error_trace.service,
-          :state => Adhearsion.config.riemann.error_trace.state,
-          :description => body.join("\n\n"),
-          :tags => [Adhearsion.config.riemann.error_trace.tag, Adhearsion.config.platform.environment.to_s],
-          :metric => 1,
-          :host => Adhearsion.config.riemann.origin_host
-        }
-
-        rc << msg
-      end
 
       Adhearsion::Events.register_callback(:punchblock) do |e, logger|
         msg = {
@@ -40,10 +22,10 @@ module AhnRiemann
         }
         if e.is_a? Punchblock::Connection::Connected
           msg.merge!(:state => 'connected')
-          rc << msg
+          @@riemann_client << msg
         elsif defined?(Punchblock::Connection::Disconnected) and e.is_a? Punchblock::Connection::Disconnected
           msg.merge!(:state => 'disconnected')
-          rc << msg
+          @@riemann_client << msg
         end
       end
     end
@@ -89,6 +71,36 @@ module AhnRiemann
     end
     
     generators :"riemann_plugin:config" => AhnRiemann::ConfigGenerator
+
+    def self.catching_errors(extra_data={}, &block)
+      block.call
+    rescue Exception => e
+      # Use any object that responds to to_hash, so it can be a static or a dynamic generated hash
+      AhnRiemann::Plugin.deliver_exception(e, extra_data.to_hash)
+    end
+
+    def self.deliver_exception(e, extra_data)
+      body = []
+      body << "Exception: #{e.class}"
+      body << "Description: #{e.message}"
+      
+      extra_data.each_pair do |key, value|
+        key = key.to_s.split("_").collect{|w| w.capitalize}.join(" ")
+        body << "#{key}: #{value}"
+      end
+      body << "Backtrace:\n#{e.backtrace.join("\n")}"
+
+      msg = {
+        :service => Adhearsion.config.riemann.error_trace.service,
+        :state => Adhearsion.config.riemann.error_trace.state,
+        :description => body.join("\n\n"),
+        :tags => [Adhearsion.config.riemann.error_trace.tag, Adhearsion.config.platform.environment.to_s],
+        :metric => 1,
+        :host => Adhearsion.config.riemann.origin_host
+      }
+
+      @@riemann_client << msg
+    end
 
   end
 end
