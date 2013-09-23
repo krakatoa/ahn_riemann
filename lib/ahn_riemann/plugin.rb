@@ -40,10 +40,11 @@ module AhnRiemann
         }
         if e.is_a? Punchblock::Connection::Connected
           msg.merge!(:state => 'connected')
-        elsif e.is_a? Punchblock::Connection::Disconnected
+          rc << msg
+        elsif defined?(Punchblock::Connection::Disconnected) and e.is_a? Punchblock::Connection::Disconnected
           msg.merge!(:state => 'disconnected')
+          rc << msg
         end
-        rc << msg
       end
     end
     
