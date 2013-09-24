@@ -74,6 +74,8 @@ module AhnRiemann
 
     def self.catching_errors(extra_data={}, &block)
       block.call
+    rescue Adhearsion::Call::Hangup
+      raise Adhearsion::Call::Hangup
     rescue Exception => e
       # Use any object that responds to to_hash, so it can be a static or a dynamic generated hash
       AhnRiemann::Plugin.deliver_exception(e, extra_data.to_hash)
