@@ -6,10 +6,34 @@ module AhnRiemann
   class Plugin < Adhearsion::Plugin
     
     @@riemann_client = nil
+    @@scheduler = nil
 
     # Actions to perform when the plugin is loaded
     #
     init :ahn_riemann do
+      @@scheduler = AhnRiemann::SuckerTic.new
+      @@scheduler.every(5) {
+        stats = Adhearsion.statistics.as_json.select {|key| ["calls_offered", "calls_rejected", "calls_routed", "calls_dialed"].include?(key)}.dup
+        active_calls = Adhearsion.active_calls.count
+        ahn_stats = {
+          :active => active_calls,
+          :offered => stats["calls_offered"],
+          :routed => stats["calls_routed"],
+          :rejected => stats["calls_rejected"],
+          :dialed => stats["calls_dialed"]
+        }
+
+        msg = {
+          :service => Adhearsion.config.riemann.punchblock_connection.service,
+          :tags => [Adhearsion.config.riemann.punchblock_connection.tag, Adhearsion.config.platform.environment.to_s],
+          :metric => ahn_stats[:active],
+          :host => Adhearsion.config.riemann.origin_host,
+          :state => ahn_stats.to_s
+        }
+        @@riemann_client << msg
+      }
+      @@scheduler.async.run
+
       @@riemann_client = Riemann::Client.new(:host => Adhearsion.config.riemann.host, :port => Adhearsion.config.riemann.port)
       logger.warn "Ahn-Riemann client connected to #{Adhearsion.config.riemann.host}:#{Adhearsion.config.riemann.port}"
 
