@@ -11,7 +11,7 @@ module AhnRiemann
     # Actions to perform when the plugin is loaded
     #
     init :ahn_riemann do
-      @@scheduler = AhnRiemann::SuckerTic.new
+      @@scheduler = AhnRiemann::Scheduler.new
       @@scheduler.every(5) {
         stats = Adhearsion.statistics.as_json.select {|key| ["calls_offered", "calls_rejected", "calls_routed", "calls_dialed"].include?(key)}.dup
         active_calls = Adhearsion.active_calls.count
@@ -24,8 +24,8 @@ module AhnRiemann
         }
 
         msg = {
-          :service => Adhearsion.config.riemann.punchblock_connection.service,
-          :tags => [Adhearsion.config.riemann.punchblock_connection.tag, Adhearsion.config.platform.environment.to_s],
+          :service => Adhearsion.config.riemann.active_calls.service,
+          :tags => [Adhearsion.config.riemann.active_calls.tag, Adhearsion.config.platform.environment.to_s],
           :metric => ahn_stats[:active],
           :host => Adhearsion.config.riemann.origin_host,
           :state => ahn_stats.to_s
@@ -39,6 +39,7 @@ module AhnRiemann
 
       Adhearsion::Events.register_callback(:shutdown) do |e, logger|
         msg = write_msg("shutdown")
+        @@scheduler.terminate
         @@riemann_client << msg
       end
 
@@ -74,6 +75,13 @@ module AhnRiemann
           service events_config["punchblock_connection"]["service"]
           tag events_config["punchblock_connection"]["tag"]
         }
+
+        if events_config["active_calls"]
+          active_calls {
+            service events_config["active_calls"]["service"]
+            tag events_config["active_calls"]["tag"]
+          }
+        end
 
       end
 

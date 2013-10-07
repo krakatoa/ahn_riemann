@@ -45,6 +45,10 @@ module AhnRiemann
         "punchblock_connection" => {
           "service" => "ivr-notify",
           "state" => :unused
+        },
+        "active_calls" => {
+          "service" => "ivr-notify",
+          "state" => :unused
         }
       }
 
