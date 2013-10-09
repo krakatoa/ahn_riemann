@@ -123,6 +123,7 @@ module AhnRiemann
     rescue Exception => e
       # Use any object that responds to to_hash, so it can be a static or a dynamic generated hash
       AhnRiemann::Plugin.deliver_exception(e, extra_data.to_hash)
+      raise e
     end
 
     def self.deliver_exception(e, extra_data)
