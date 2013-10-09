@@ -11,25 +11,22 @@ module AhnRiemann
     # Actions to perform when the plugin is loaded
     #
     init :ahn_riemann do
+      AhnRiemann::EventFactory.init(event_factory_config)
+      
       @@scheduler = AhnRiemann::Scheduler.new
       @@scheduler.every(5) {
         stats = Adhearsion.statistics.as_json.select {|key| ["calls_offered", "calls_rejected", "calls_routed", "calls_dialed"].include?(key)}.dup
-        active_calls = Adhearsion.active_calls.count
         ahn_stats = {
-          :active => active_calls,
           :offered => stats["calls_offered"],
           :routed => stats["calls_routed"],
           :rejected => stats["calls_rejected"],
           :dialed => stats["calls_dialed"]
         }
 
-        msg = {
-          :service => Adhearsion.config.riemann.active_calls.service,
-          :tags => [Adhearsion.config.riemann.active_calls.tag, Adhearsion.config.platform.environment.to_s],
-          :metric => ahn_stats[:active],
-          :host => Adhearsion.config.riemann.origin_host,
-          :state => ahn_stats.to_s
-        }
+        msg = AhnRiemann::EventFactory.active_calls_msg(
+          :active_calls => Adhearsion.active_calls.count,
+          :description => ahn_stats.to_s
+        )
         @@riemann_client << msg
       }
       @@scheduler.async.run
@@ -38,13 +35,13 @@ module AhnRiemann
       logger.warn "Ahn-Riemann client connected to #{Adhearsion.config.riemann.host}:#{Adhearsion.config.riemann.port}"
 
       Adhearsion::Events.register_callback(:shutdown) do |e, logger|
-        msg = write_msg("shutdown")
+        msg = AhnRiemann::EventFactory.punchblock_connection_msg(:status => "shutdown")
         @@scheduler.terminate
         @@riemann_client << msg
       end
 
       Adhearsion::Events.register_callback(:punchblock) do |e, logger|
-        msg = write_msg("connected")
+        msg = AhnRiemann::EventFactory.punchblock_connection_msg(:status => "connected")
         @@riemann_client << msg
       end
     end
@@ -98,13 +95,23 @@ module AhnRiemann
 
     generators :"riemann_plugin:config" => AhnRiemann::ConfigGenerator
 
-    def self.write_msg(state)
-      msg = {
+    def self.event_factory_config
+      {
+        :host => Adhearsion.config.riemann.origin_host,
+        :environment => Adhearsion.config.platform.environment.to_s,
+        :error_params => {
+          :service => Adhearsion.config.riemann.error_trace.service,
+          :state => Adhearsion.config.riemann.error_trace.state,
+          :tag => Adhearsion.config.riemann.error_trace.tag
+        },
+        :active_calls_params => {
+          :service => Adhearsion.config.riemann.active_calls.service,
+          :tag => Adhearsion.config.riemann.active_calls.tag
+        },
+        :punchblock_connection_params => {
           :service => Adhearsion.config.riemann.punchblock_connection.service,
-          :state => state,
-          :tags => [Adhearsion.config.riemann.punchblock_connection.tag, Adhearsion.config.platform.environment.to_s],
-          :metric => 1,
-          :host => Adhearsion.config.riemann.origin_host
+          :tag => Adhearsion.config.riemann.punchblock_connection.tag
+        }
       }
     end
 
@@ -128,14 +135,7 @@ module AhnRiemann
       end
       body << "Backtrace:\n#{e.backtrace.join("\n")}"
 
-      msg = {
-        :service => Adhearsion.config.riemann.error_trace.service,
-        :state => Adhearsion.config.riemann.error_trace.state,
-        :description => body.join("\n\n"),
-        :tags => [Adhearsion.config.riemann.error_trace.tag, Adhearsion.config.platform.environment.to_s],
-        :metric => 1,
-        :host => Adhearsion.config.riemann.origin_host
-      }
+      msg = AhnRiemann::EventFactory.error_msg(:description => body.join("\n\n"))
 
       @@riemann_client << msg
     end
