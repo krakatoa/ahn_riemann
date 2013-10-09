@@ -1,3 +1,4 @@
+require "celluloid"
 require "timers"
 
 module AhnRiemann
