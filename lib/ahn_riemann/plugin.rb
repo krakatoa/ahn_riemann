@@ -98,17 +98,12 @@ module AhnRiemann
     def self.register_active_calls_events
       @@scheduler = AhnRiemann::Scheduler.new
       @@scheduler.every(5) {
-        stats = Adhearsion.statistics.as_json.select {|key| ["calls_offered", "calls_rejected", "calls_routed", "calls_dialed"].include?(key)}.dup
-        ahn_stats = {
-          :offered => stats["calls_offered"],
-          :routed => stats["calls_routed"],
-          :rejected => stats["calls_rejected"],
-          :dialed => stats["calls_dialed"]
-        }
+        stats = Adhearsion.statistics.dump.call_counts
+        active_calls_count = stats.delete(:active)
 
         msg = AhnRiemann::EventFactory.active_calls_msg(
-          :active_calls => Adhearsion.active_calls.count,
-          :description => ahn_stats.to_s
+          :active_calls => active_calls_count,
+          :description => stats.to_s
         )
         @@riemann_client << msg
       }
