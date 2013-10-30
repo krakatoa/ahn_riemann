@@ -75,7 +75,9 @@ module AhnRiemann
       
       @@riemann_client = Riemann::Client.new(:host => Adhearsion.config.riemann.host, :port => Adhearsion.config.riemann.port)
       logger.warn "Ahn-Riemann client connected to #{Adhearsion.config.riemann.host}:#{Adhearsion.config.riemann.port}"
+    end
 
+    run :ahn_riemann do
       register_punchblock_connection_events
       register_active_calls_events
     end
