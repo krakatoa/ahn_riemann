@@ -132,7 +132,7 @@ module AhnRiemann
         key = key.to_s.split("_").collect{|w| w.capitalize}.join(" ")
         body << "#{key}: #{value}"
       end
-      body << "Backtrace:\n#{e.backtrace.join("\n")}"
+      body << "Backtrace:\n#{e.backtrace.join("\n") rescue "empty"}"
 
       msg = AhnRiemann::EventFactory.error_msg(:description => body.join("\n\n"))
 
