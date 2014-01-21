@@ -59,41 +59,13 @@ module AhnRiemann
 
     end
 
-    def self.event_factory_config
-      {
-        :host => Adhearsion.config.riemann.origin_host,
-        :environment => Adhearsion.config.platform.environment.to_s,
-        :error_params => {
-          :service => Adhearsion.config.riemann.error_trace.service,
-          :state => Adhearsion.config.riemann.error_trace.state,
-          :tag => Adhearsion.config.riemann.error_trace.tag
-        },
-        :active_calls_params => {
-          :service => Adhearsion.config.riemann.active_calls.service,
-          :tag => Adhearsion.config.riemann.active_calls.tag
-        },
-        :punchblock_connection_params => {
-          :service => Adhearsion.config.riemann.punchblock_connection.service,
-          :tag => Adhearsion.config.riemann.punchblock_connection.tag
-        },
-        :actors_count_params => {
-          :service => Adhearsion.config.riemann.actors_count.service,
-          :tag => Adhearsion.config.riemann.actors_count.tag
-        },
-        :threads_count_params => {
-          :service => Adhearsion.config.riemann.threads_count.service,
-          :tag => Adhearsion.config.riemann.threads_count.tag
-        }
-      }
-    end
-
     @@riemann_client = nil
     @@scheduler = nil
 
     # Actions to perform when the plugin is loaded
     #
     init :ahn_riemann do
-      AhnRiemann::EventFactory.init(event_factory_config)
+      AhnRiemann::EventFactory.init(Adhearsion.config.riemann.to_hash)
       
       @@riemann_client = Riemann::Client.new(:host => Adhearsion.config.riemann.host, :port => Adhearsion.config.riemann.port)
       logger.warn "Ahn-Riemann client connected to #{Adhearsion.config.riemann.host}:#{Adhearsion.config.riemann.port}"

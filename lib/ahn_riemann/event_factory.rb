@@ -5,38 +5,15 @@ module AhnRiemann
     def initialize(origin_host, environment)
       @origin_host = origin_host
       @environment = environment
-
-      @error_params = {}
-      @active_calls_params = {}
-      @punchblock_connection_params = {}
-      @actors_count_params = {}
-      @threads_count_params = {}
     end
 
-    def error_params=(params)
-      @error_params[:service] = params[:service]
-      @error_params[:state] = params[:state]
-      @error_params[:tag] = params[:tag]
-    end
-
-    def active_calls_params=(params)
-      @active_calls_params[:service] = params[:service]
-      @active_calls_params[:tag] = params[:tag]
-    end
-
-    def punchblock_connection_params=(params)
-      @punchblock_connection_params[:service] = params[:service]
-      @punchblock_connection_params[:tag] = params[:tag]
-    end
-
-    def actors_count_params=(params)
-      @actors_count_params[:service] = params[:service]
-      @actors_count_params[:tag] = params[:tag]
-    end
-
-    def threads_count_params=(params)
-      @threads_count_params[:service] = params[:service]
-      @threads_count_params[:tag] = params[:tag]
+    def params_for(service_name)
+      service_config = @@adhearsion_config[service_name]
+      
+      service = service_config[:service] rescue nil
+      state = service_config[:state] rescue nil
+      tag = service_config[:tag] rescue nil
+      return { :service => service, :state => state, :tag => tag }
     end
 
     def basic_params
@@ -50,65 +27,41 @@ module AhnRiemann
       params.merge!(basic_params)
     end
 
-    def merge_error_params!(params={})
-      params.merge!(@error_params)
-    end
-
-    def merge_active_calls_params!(params={})
-      params.merge!(@active_calls_params)
-    end
-
-    def merge_punchblock_connection_params!(params={})
-      params.merge!(@punchblock_connection_params)
-    end
-
-    def merge_actors_count_params!(params={})
-      params.merge!(@actors_count_params)
-    end
-
-    def merge_threads_count_params!(params={})
-      params.merge!(@threads_count_params)
-    end
-
     def error_event(params)
       merge_basic_params!(params)
-      merge_error_params!(params)
+      params.merge!(params_for(:error_trace))
       ErrorEvent.new(params)
     end
 
     def active_calls_event(params)
       merge_basic_params!(params)
-      merge_active_calls_params!(params)
+      params.merge!(params_for(:active_calls))
       ActiveCallsEvent.new(params)
     end
 
     def punchblock_connection_event(params)
       merge_basic_params!(params)
-      merge_punchblock_connection_params!(params)
+      params.merge!(params_for(:punchblock_connection))
       PunchblockConnectionEvent.new(params)
     end
 
     def actors_count_event(params)
       merge_basic_params!(params)
-      merge_actors_count_params!(params)
+      params.merge!(params_for(:actors_count))
       ActorsCountEvent.new(params)
     end
 
     def threads_count_event(params)
       merge_basic_params!(params)
-      merge_threads_count_params!(params)
+      params.merge!(params_for(:threads_count))
       ThreadsCountEvent.new(params)
     end
     
     def self.init(config)
-      # TODO Remove this! this should not initialize a hash with all the config,
-      # it should simply read from the Adhearsion.config.riemann object all the params!
-      @@event_factory = EventFactory.new(config[:host], config[:environment])
-      @@event_factory.error_params = config[:error_params]
-      @@event_factory.active_calls_params = config[:active_calls_params]
-      @@event_factory.punchblock_connection_params = config[:punchblock_connection_params]
-      @@event_factory.actors_count_params = config[:actors_count_params]
-      @@event_factory.threads_count_params = config[:threads_count_params]
+      host = Adhearsion.config.riemann.origin_host
+      environment = Adhearsion.config.platform.environment.to_s
+      @@event_factory = EventFactory.new(host, environment)
+      @@adhearsion_config = config
     end
     
     def self.error_msg(params)
