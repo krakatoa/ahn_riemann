@@ -72,8 +72,20 @@ module AhnRiemann
     end
 
     run :ahn_riemann do
+      init_scheduler
       register_punchblock_connection_events
       register_active_calls_events
+      register_actors_count_events
+      register_threads_count_events
+      run_scheduler
+    end
+
+    def self.init_scheduler
+      @@scheduler = AhnRiemann::Scheduler.new
+    end
+
+    def self.run_scheduler
+      @@scheduler.async.run
     end
 
     def self.register_punchblock_connection_events
@@ -92,7 +104,6 @@ module AhnRiemann
     end
 
     def self.register_active_calls_events
-      @@scheduler = AhnRiemann::Scheduler.new
       @@scheduler.every(5) {
         stats = Adhearsion.statistics.dump.call_counts rescue {}
         active_calls_count = stats.delete(:active)
@@ -103,21 +114,25 @@ module AhnRiemann
         )
         @@riemann_client << msg
       }
+    end
+
+    def self.register_actors_count_events
       @@scheduler.every(5) {
         msg = AhnRiemann::EventFactory.actors_count_msg(
           :actors_count => Celluloid::Actor.all.size
         )
         @@riemann_client << msg
       }
+    end
+
+    def self.register_threads_count_events
       @@scheduler.every(5) {
         msg = AhnRiemann::EventFactory.threads_count_msg(
           :threads_count => Thread.list.count
         )
         @@riemann_client << msg
       }
-      @@scheduler.async.run
     end
-
 
     def self.catching_errors(extra_data={}, &block)
       block.call
