@@ -40,14 +40,22 @@ module AhnRiemann
       event_handlers = {
         "error_trace" => {
           "state" => "critical",
-          "service" => "ivr-notify"
+          "tag" => "ivr-notify"
         },
         "punchblock_connection" => {
-          "service" => "ivr-notify",
+          "tag" => "ivr-notify",
           "state" => :unused
         },
         "active_calls" => {
-          "service" => "ivr-notify",
+          "tag" => "ivr-notify",
+          "state" => :unused
+        },
+        "actors_count" => {
+          "tag" => "ivr-notify",
+          "state" => :unused
+        },
+        "threads_count" => {
+          "tag" => "ivr-notify",
           "state" => :unused
         }
       }
@@ -59,8 +67,8 @@ module AhnRiemann
         @events_config[event_name] = {}
         
         unless config['service'] == :unused
-          input_service = ask("Service name [defaults to '#{config['service']}']:")
-          @events_config[event_name]["service"] = input_service.empty? ? config['service'] : input_service
+          input_service = ask("Service name [defaults to '#{event_name}']:")
+          @events_config[event_name]["service"] = input_service.empty? ? event_name : input_service
         end
 
         unless config['state'] == :unused
@@ -69,8 +77,8 @@ module AhnRiemann
         end
 
         unless config['tag'] == :unused
-          input_tag = ask("Event tag [defaults to '#{event_name}']:")
-          @events_config[event_name]["tag"] = input_tag.empty? ? event_name : input_tag
+          input_tag = ask("Event tag [defaults to '#{config['tag']}']:")
+          @events_config[event_name]["tag"] = input_tag.empty? ? config['tag'] : input_tag
         end
       end
     end

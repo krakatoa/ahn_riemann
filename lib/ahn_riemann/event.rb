@@ -6,6 +6,7 @@ module AhnRiemann
       @service = params[:service]
       @state = params[:state]
       @tags = [params[:tag], @environment]
+      @description = ""
     end
     
     def to_msg
@@ -42,6 +43,20 @@ module AhnRiemann
       super(params)
       @state = params[:status]
       @metric = 1
+    end
+  end
+
+  class ActorsCountEvent < AhnRiemann::Event
+    def initialize(params)
+      super(params)
+      @metric = params[:actors_count]
+    end
+  end
+
+  class ThreadsCountEvent < AhnRiemann::Event
+    def initialize(params)
+      super(params)
+      @metric = params[:threads_count]
     end
   end
 end

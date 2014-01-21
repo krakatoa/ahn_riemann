@@ -41,6 +41,20 @@ module AhnRiemann
           }
         end
 
+        if events_config["actors_count"]
+          actors_count {
+            service events_config["actors_count"]["service"]
+            tag events_config["actors_count"]["tag"]
+          }
+        end
+
+        if events_config["threads_count"]
+          threads_count {
+            service events_config["threads_count"]["service"]
+            tag events_config["threads_count"]["tag"]
+          }
+        end
+
       end
 
     end
@@ -61,6 +75,14 @@ module AhnRiemann
         :punchblock_connection_params => {
           :service => Adhearsion.config.riemann.punchblock_connection.service,
           :tag => Adhearsion.config.riemann.punchblock_connection.tag
+        },
+        :actors_count_params => {
+          :service => Adhearsion.config.riemann.actors_count.service,
+          :tag => Adhearsion.config.riemann.actors_count.tag
+        },
+        :threads_count_params => {
+          :service => Adhearsion.config.riemann.threads_count.service,
+          :tag => Adhearsion.config.riemann.threads_count.tag
         }
       }
     end
@@ -100,12 +122,24 @@ module AhnRiemann
     def self.register_active_calls_events
       @@scheduler = AhnRiemann::Scheduler.new
       @@scheduler.every(5) {
-        stats = Adhearsion.statistics.dump.call_counts
+        stats = Adhearsion.statistics.dump.call_counts rescue {}
         active_calls_count = stats.delete(:active)
 
         msg = AhnRiemann::EventFactory.active_calls_msg(
           :active_calls => active_calls_count,
           :description => stats.to_s
+        )
+        @@riemann_client << msg
+      }
+      @@scheduler.every(5) {
+        msg = AhnRiemann::EventFactory.actors_count_msg(
+          :actors_count => Celluloid::Actor.all.size
+        )
+        @@riemann_client << msg
+      }
+      @@scheduler.every(5) {
+        msg = AhnRiemann::EventFactory.threads_count_msg(
+          :threads_count => Thread.list.count
         )
         @@riemann_client << msg
       }
